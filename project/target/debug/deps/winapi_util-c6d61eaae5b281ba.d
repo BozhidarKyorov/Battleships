@@ -1,0 +1,11 @@
+D:\Uni\Rust\Project\Battleships\project\target\debug\deps\libwinapi_util-c6d61eaae5b281ba.rmeta: C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src/lib.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\console.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\file.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\sysinfo.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\win.rs
+
+D:\Uni\Rust\Project\Battleships\project\target\debug\deps\libwinapi_util-c6d61eaae5b281ba.rlib: C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src/lib.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\console.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\file.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\sysinfo.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\win.rs
+
+D:\Uni\Rust\Project\Battleships\project\target\debug\deps\winapi_util-c6d61eaae5b281ba.d: C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src/lib.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\console.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\file.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\sysinfo.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\win.rs
+
+C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src/lib.rs:
+C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\console.rs:
+C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\file.rs:
+C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\sysinfo.rs:
+C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\winapi-util-0.1.9\src\win.rs:

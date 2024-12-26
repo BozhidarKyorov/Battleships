@@ -1,0 +1,11 @@
+D:\Uni\Rust\Project\Battleships\project\target\debug\deps\libtinyvec-faa6285ff2f1dc68.rmeta: C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src/lib.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\array.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\array\generated_impl.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\arrayvec.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\arrayvec_drain.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\slicevec.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\tinyvec.rs
+
+D:\Uni\Rust\Project\Battleships\project\target\debug\deps\tinyvec-faa6285ff2f1dc68.d: C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src/lib.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\array.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\array\generated_impl.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\arrayvec.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\arrayvec_drain.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\slicevec.rs C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\tinyvec.rs
+
+C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src/lib.rs:
+C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\array.rs:
+C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\array\generated_impl.rs:
+C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\arrayvec.rs:
+C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\arrayvec_drain.rs:
+C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\slicevec.rs:
+C:\Users\bobka\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tinyvec-1.8.1\src\tinyvec.rs:
