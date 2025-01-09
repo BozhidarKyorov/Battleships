@@ -1,10 +1,11 @@
 use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, Color, DrawMode, Mesh, Rect, Text, TextFragment};
 use ggez::{Context, ContextBuilder, GameResult};
+use ggez::input::mouse::MouseButton;
 use rand::Rng;
 
 const GRID_SIZE: usize = 10;
-const CELL_SIZE: f32 = 40.0; // Each cell is 40x40 pixels
+const CELL_SIZE: f32 = 40.0;
 
 #[derive(Copy, Clone, PartialEq)]
 enum CellState {
@@ -13,10 +14,19 @@ enum CellState {
     Miss,
 }
 
+#[derive(PartialEq)]
+enum GameState {
+    StartScreen,
+    ShipPlacement,
+    Playing,
+}
+
 struct BattleshipGame {
-    player_board: Vec<Vec<CellState>>,  // Player's board
-    computer_board: Vec<Vec<CellState>>, // Computer's board
-    is_player_turn: bool,               // Tracks whose turn it is
+    player_board: Vec<Vec<CellState>>,
+    computer_board: Vec<Vec<CellState>>,
+    is_player_turn: bool,
+    game_state: GameState,
+    ships_to_place: usize,  // Number of ships to place
 }
 
 impl BattleshipGame {
@@ -25,6 +35,8 @@ impl BattleshipGame {
             player_board: vec![vec![CellState::Empty; GRID_SIZE]; GRID_SIZE],
             computer_board: vec![vec![CellState::Empty; GRID_SIZE]; GRID_SIZE],
             is_player_turn: true,
+            game_state: GameState::StartScreen,
+            ships_to_place: 5, // Default number of ships
         }
     }
 
@@ -34,10 +46,62 @@ impl BattleshipGame {
             let row = rng.gen_range(0..GRID_SIZE);
             let col = rng.gen_range(0..GRID_SIZE);
             if self.player_board[row][col] == CellState::Empty {
-                self.player_board[row][col] = CellState::Miss; // For simplicity, mark as Miss
+                self.player_board[row][col] = CellState::Miss; // Mark as miss for simplicity
                 break;
             }
         }
+    }
+
+    fn draw_start_screen(&self, ctx: &mut Context) -> GameResult {
+        //graphics::clear(ctx, Color::from_rgb(0, 0, 180)); // Black background
+
+        let title_text = Text::new(
+            TextFragment::new("Battleship")
+                .color(Color::from_rgb(255, 255, 255))
+                .scale(64.0),
+        );
+
+        let start_text = Text::new(
+            TextFragment::new("Start")
+                .color(Color::from_rgb(0, 255, 0))
+                .scale(48.0),
+        );
+
+        let exit_text = Text::new(
+            TextFragment::new("Exit")
+                .color(Color::from_rgb(255, 0, 0))
+                .scale(48.0),
+        );
+
+        let (window_width, window_height) = (1200.0, 800.0);
+        let title_x = (window_width - title_text.width(ctx) as f32) / 2.0;
+        let title_y = 100.0;
+
+        let start_x = (window_width - start_text.width(ctx) as f32) / 2.0;
+        let start_y = 300.0;
+
+        let exit_x = (window_width - exit_text.width(ctx) as f32) / 2.0;
+        let exit_y = 400.0;
+
+        graphics::draw(ctx, &title_text, graphics::DrawParam::default().dest([title_x, title_y]))?;
+        graphics::draw(ctx, &start_text, graphics::DrawParam::default().dest([start_x, start_y]))?;
+        graphics::draw(ctx, &exit_text, graphics::DrawParam::default().dest([exit_x, exit_y]))?;
+
+        graphics::present(ctx)
+    }
+
+    fn draw_game_screen (&self, ctx: &mut Context) -> GameResult {
+        //graphics::clear(ctx, Color::from_rgb(0, 0, 180)); // Background color
+        let border_color = Color::from_rgb(255, 255, 255);
+
+        let (player_board_x, computer_board_x, boards_y) = self.calculate_positions();
+
+        self.draw_board(ctx, &self.player_board, player_board_x, boards_y, border_color)?;
+        self.draw_board(ctx, &self.computer_board, computer_board_x, boards_y, border_color)?;
+
+        self.draw_labels(ctx, player_board_x, computer_board_x, boards_y)?;
+
+        graphics::present(ctx)
     }
 
     fn calculate_positions(&self) -> (f32, f32, f32) {
@@ -104,7 +168,7 @@ impl BattleshipGame {
         );
 
         let computer_label = Text::new(
-            TextFragment::new("Enemy")
+            TextFragment::new("Computer")
                 .color(label_color)
                 .scale(32.0),
         );
@@ -117,39 +181,81 @@ impl BattleshipGame {
 
         Ok(())
     }
+
+    fn draw_ship_placement_screen(&self, ctx: &mut Context) -> GameResult {
+        //graphics::clear(ctx, Color::from_rgb(0, 0, 180)); // Background color
+    
+        // Instruction Text
+        let instruction = graphics::Text::new((
+            "Place your ships",
+            graphics::Font::default(),
+            32.0,
+        ));
+        graphics::draw(ctx, &instruction, (ggez::mint::Point2 { x: 20.0, y: 20.0 }, Color::WHITE))?;
+    
+        // Draw Player's Board
+        let player_board_x = 100.0; // Adjusted for layout
+        let player_board_y = 100.0; // Adjusted for layout
+        self.draw_board(ctx, &self.player_board, player_board_x, player_board_y, Color::WHITE)?;
+    
+        graphics::present(ctx)
+    }
+    
 }
 
 impl EventHandler for BattleshipGame {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
-        if !self.is_player_turn {
+        if self.game_state == GameState::Playing && !self.is_player_turn {
             self.computer_turn();
             self.is_player_turn = true;
         }
         Ok(())
     }
 
+    // fn draw(&mut self, ctx: &mut Context) -> GameResult {
+    //     match self.game_state {
+    //         GameState::StartScreen => self.draw_start_screen(ctx),
+    //         GameState::Playing => self.draw_game_screen(ctx),
+    //     }
+    // }
+
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        // Clear the screen only once per frame
         graphics::clear(ctx, Color::from_rgb(0, 0, 255)); // Background color
-        let border_color = Color::from_rgb(255, 255, 255);
-
-        let (player_board_x, computer_board_x, boards_y) = self.calculate_positions();
-
-        self.draw_board(ctx, &self.player_board, player_board_x, boards_y, border_color)?;
-        self.draw_board(ctx, &self.computer_board, computer_board_x, boards_y, border_color)?;
-
-        self.draw_labels(ctx, player_board_x, computer_board_x, boards_y)?;
-
+    
+        // Based on the game state, draw the correct screen
+        match self.game_state {
+            GameState::StartScreen => {
+                self.draw_start_screen(ctx)?;  // Draw the Start Screen
+            }
+            GameState::ShipPlacement => {
+                self.draw_ship_placement_screen(ctx)?;  // Draw Ship Placement Screen
+            }
+            GameState::Playing => {
+                self.draw_game_screen(ctx)?;  // Draw the Playing screen (the game itself)
+            }
+        }
+    
+        // Present the drawn content to the screen
         graphics::present(ctx)
     }
 
-    fn mouse_button_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        button: ggez::input::mouse::MouseButton,
-        x: f32,
-        y: f32,
-    ) {
-        if button == ggez::input::mouse::MouseButton::Left {
+    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        
+        if self.game_state == GameState::StartScreen && button == MouseButton::Left {
+            let (window_width, _window_height) = (1200.0, 800.0);
+            let start_x = (window_width - 200.0) / 2.0; // Approximate button width
+            let start_y = 300.0;
+            let exit_y = 400.0;
+
+            if x >= start_x && x <= start_x + 200.0 && y >= start_y && y <= start_y + 50.0 {
+                self.game_state = GameState::ShipPlacement; // Start game
+            } else if x >= start_x && x <= start_x + 200.0 && y >= exit_y && y <= exit_y + 50.0 {
+                std::process::exit(0); // Exit game
+            }
+        }
+
+        if self.game_state == GameState::Playing && button == MouseButton::Left {
             let (player_board_x, computer_board_x, boards_y) = self.calculate_positions();
             let board_width = GRID_SIZE as f32 * CELL_SIZE;
 
@@ -165,6 +271,38 @@ impl EventHandler for BattleshipGame {
 
                 self.is_player_turn = false;
             }
+        }
+
+        if self.game_state == GameState::ShipPlacement && button == ggez::input::mouse::MouseButton::Left {
+            let board_width = GRID_SIZE as f32 * CELL_SIZE;
+            let window_width = 1200.0; // Match window size
+            let window_height = 800.0;
+
+            let total_boards_width = board_width + 50.0; // Single board
+            let start_x = (window_width - total_boards_width) / 2.0;
+            let player_board_x = start_x;
+            let boards_y = (window_height - board_width) / 2.0;
+
+            // Check if the click is within the player's board
+            if x >= player_board_x && x < player_board_x + board_width
+                && y >= boards_y && y < boards_y + board_width
+            {
+                let col = ((x - player_board_x) / CELL_SIZE).floor() as usize;
+                let row = ((y - boards_y) / CELL_SIZE).floor() as usize;
+
+                // Place ship if the cell is empty
+                if self.player_board[row][col] == CellState::Empty {
+                    self.player_board[row][col] = CellState::Hit; // Mark as ship for simplicity
+                    self.ships_to_place -= 1;
+                }
+
+                // Once all ships are placed, transition to playing state
+                if self.ships_to_place == 0 {
+                    self.game_state = GameState::Playing;
+                }
+            }
+                
+            
         }
     }
 }
