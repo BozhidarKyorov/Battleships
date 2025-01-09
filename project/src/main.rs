@@ -21,6 +21,28 @@ enum GameState {
     Playing,
 }
 
+#[derive(Copy, Clone, PartialEq)]
+enum ShipType {
+    Destroyer, // Size 2
+    Submarine, // Size 3
+    Cruiser,   // Size 3
+    Battleship, // Size 4
+    Carrier,   // Size 5
+}
+
+impl ShipType {
+    fn size(&self) -> usize {
+        match self {
+            ShipType::Destroyer => 2,
+            ShipType::Submarine => 3,
+            ShipType::Cruiser => 3,
+            ShipType::Battleship => 4,
+            ShipType::Carrier => 5,
+        }
+    }
+}
+
+
 struct BattleshipGame {
     player_board: Vec<Vec<CellState>>,
     computer_board: Vec<Vec<CellState>>,
@@ -314,24 +336,32 @@ impl EventHandler for BattleshipGame {
             let board_width = GRID_SIZE as f32 * CELL_SIZE;
             let player_board_x = 100.0;
             let boards_y = 100.0;
-        
+    
             // Check if the click is within the player's board
             if x >= player_board_x && x < player_board_x + board_width
                 && y >= boards_y && y < boards_y + board_width
             {
                 let col = ((x - player_board_x) / CELL_SIZE).floor() as usize;
                 let row = ((y - boards_y) / CELL_SIZE).floor() as usize;
-        
+    
                 // Place ship if the cell is empty and we have ships left to place
                 if self.player_board[row][col] == CellState::Empty && !self.ships_to_place.is_empty() {
                     self.player_board[row][col] = CellState::Hit; // Mark as a ship for simplicity
                     self.ships_to_place.pop(); // Remove one ship from the list
                 }
-        
-                // Once all ships are placed, transition to playing state
-                if self.ships_to_place.is_empty() {
-                    self.game_state = GameState::Playing;
-                }
+            }
+    
+            // Check if "Continue" button is clicked
+            let button_x = 500.0;
+            let button_y = 700.0;
+            let button_width = 200.0;
+            let button_height = 50.0;
+    
+            if self.ships_to_place.is_empty()
+                && x >= button_x && x <= button_x + button_width
+                && y >= button_y && y <= button_y + button_height
+            {
+                self.game_state = GameState::Playing; // Transition to playing state
             }
         }
     }
