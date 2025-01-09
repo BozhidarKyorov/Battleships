@@ -1,6 +1,8 @@
 use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, Color, DrawMode, Mesh, Rect, Text, TextFragment};
 use ggez::{Context, ContextBuilder, GameResult};
+use ggez::input::mouse::MouseButton;
+use ggez::timer;
 use rand::Rng;
 
 const GRID_SIZE: usize = 10;
@@ -13,10 +15,18 @@ enum CellState {
     Miss,
 }
 
+#[derive(PartialEq)]
+enum GameState {
+    StartScreen,
+    ShipPlacement,
+    Playing,
+}
+
 struct BattleshipGame {
     player_board: Vec<Vec<CellState>>,  // Player's board
     computer_board: Vec<Vec<CellState>>, // Computer's board
     is_player_turn: bool,               // Tracks whose turn it is
+    game_state: GameState,
 }
 
 impl BattleshipGame {
@@ -25,6 +35,7 @@ impl BattleshipGame {
             player_board: vec![vec![CellState::Empty; GRID_SIZE]; GRID_SIZE],
             computer_board: vec![vec![CellState::Empty; GRID_SIZE]; GRID_SIZE],
             is_player_turn: true,
+            game_state: GameState::StartScreen
         }
     }
 
@@ -117,39 +128,55 @@ impl BattleshipGame {
 
         Ok(())
     }
+
+    fn draw_game_screen(&self, ctx: &mut Context) -> GameResult {
+        let border_color = Color::from_rgb(255, 255, 255);
+        let (player_board_x, computer_board_x, boards_y) = self.calculate_positions();
+    
+        self.draw_board(ctx, &self.player_board, player_board_x, boards_y, border_color)?;
+        self.draw_board(ctx, &self.computer_board, computer_board_x, boards_y, border_color)?;
+        self.draw_labels(ctx, player_board_x, computer_board_x, boards_y)?;
+    
+        // Do NOT call graphics::present here
+        Ok(())
+    }
 }
 
 impl EventHandler for BattleshipGame {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
-        if !self.is_player_turn {
-            self.computer_turn();
-            self.is_player_turn = true;
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
+        const TARGET_FPS: u32 = 60;
+
+
+        while timer::check_update_time(ctx, TARGET_FPS) {
+            if !self.is_player_turn {
+                self.computer_turn();
+                self.is_player_turn = true;
+            }
         }
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, Color::from_rgb(0, 0, 255)); // Background color
-        let border_color = Color::from_rgb(255, 255, 255);
+        // Clear the screen to a solid color (blue background)
+        graphics::clear(ctx, Color::from_rgb(0, 0, 255)); 
+        
+        // Draw the game screen, which includes both boards and labels
+        self.draw_game_screen(ctx)?;
 
-        let (player_board_x, computer_board_x, boards_y) = self.calculate_positions();
+        // Present the frame (swap the back buffer to the front)
+        graphics::present(ctx)?;
 
-        self.draw_board(ctx, &self.player_board, player_board_x, boards_y, border_color)?;
-        self.draw_board(ctx, &self.computer_board, computer_board_x, boards_y, border_color)?;
-
-        self.draw_labels(ctx, player_board_x, computer_board_x, boards_y)?;
-
-        graphics::present(ctx)
+        Ok(())
     }
 
     fn mouse_button_down_event(
         &mut self,
         _ctx: &mut Context,
-        button: ggez::input::mouse::MouseButton,
+        button: MouseButton,
         x: f32,
         y: f32,
     ) {
-        if button == ggez::input::mouse::MouseButton::Left {
+        if button == MouseButton::Left {
             let (player_board_x, computer_board_x, boards_y) = self.calculate_positions();
             let board_width = GRID_SIZE as f32 * CELL_SIZE;
 
