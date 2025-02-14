@@ -8,18 +8,19 @@ use ggez::mint;
 const GRID_SIZE: usize = 10;
 const CELL_SIZE: f32 = 40.0;
 
-#[derive(Copy, Clone, PartialEq)]
-enum CellState {
-    Empty,
-    Hit,
-    Miss,
-}
-
 #[derive(PartialEq)]
 enum GameState {
     StartScreen,
     ShipPlacement,
     Playing,
+}
+
+#[derive(Copy, Clone, PartialEq)]
+enum CellState {
+    Empty,
+    Occupied, // New variant for placed ships
+    Hit,
+    Miss,
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -49,8 +50,11 @@ struct BattleshipGame {
     computer_board: Vec<Vec<CellState>>,
     is_player_turn: bool,
     game_state: GameState,
-    ships_to_place: Vec<ShipType>, // Assuming you have a `ShipType` enum or struct
-    selected_ship: Option<ShipType>, // This tracks the selected ship
+    ships_to_place: Vec<ShipType>,
+    selected_ship: Option<ShipType>,
+    mouse_x: f32,
+    mouse_y: f32,
+    is_ship_horizontal: bool, // New field to track ship orientation
 }
 
 impl BattleshipGame {
@@ -67,19 +71,39 @@ impl BattleshipGame {
                 ShipType::Submarine,
                 ShipType::Destroyer,
             ],
-            selected_ship: None, // Initialize selected_ship to None
+            selected_ship: None,
+            mouse_x: 0.0,
+            mouse_y: 0.0,
+            is_ship_horizontal: true, // Default to horizontal orientation
         }
     }
 
     fn computer_turn(&mut self) {
         let mut rng = rand::thread_rng();
-        loop {
-            let row = rng.gen_range(0..GRID_SIZE);
-            let col = rng.gen_range(0..GRID_SIZE);
-            if self.player_board[row][col] == CellState::Empty {
-                self.player_board[row][col] = CellState::Miss; // Mark as miss for simplicity
-                break;
+        let mut target_row = rng.gen_range(0..GRID_SIZE);
+        let mut target_col = rng.gen_range(0..GRID_SIZE);
+    
+        // Simple logic: if a hit is found, target adjacent cells
+        for row in 0..GRID_SIZE {
+            for col in 0..GRID_SIZE {
+                if self.player_board[row][col] == CellState::Hit {
+                    // Target adjacent cells
+                    let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)];
+                    for (dx, dy) in directions.iter() {
+                        let new_row = row as isize + dx;
+                        let new_col = col as isize + dy;
+                        if new_row >= 0 && new_row < GRID_SIZE as isize && new_col >= 0 && new_col < GRID_SIZE as isize {
+                            target_row = new_row as usize;
+                            target_col = new_col as usize;
+                            break;
+                        }
+                    }
+                }
             }
+        }
+    
+        if self.player_board[target_row][target_col] == CellState::Empty {
+            self.player_board[target_row][target_col] = CellState::Miss;
         }
     }
 
@@ -162,13 +186,14 @@ impl BattleshipGame {
             for col in 0..GRID_SIZE {
                 let x = x_offset + col as f32 * CELL_SIZE;
                 let y = y_offset + row as f32 * CELL_SIZE;
-
+    
                 let cell_color = match board[row][col] {
                     CellState::Empty => Color::from_rgb(0, 128, 255), // Water
+                    CellState::Occupied => Color::from_rgb(100, 100, 100), // Dark grey for occupied cells
                     CellState::Hit => Color::from_rgb(255, 0, 0),     // Hit
                     CellState::Miss => Color::from_rgb(255, 255, 255), // Miss
                 };
-
+    
                 let rectangle = Mesh::new_rectangle(
                     ctx,
                     DrawMode::fill(),
@@ -176,7 +201,7 @@ impl BattleshipGame {
                     cell_color,
                 )?;
                 graphics::draw(ctx, &rectangle, graphics::DrawParam::default())?;
-
+    
                 let border = Mesh::new_rectangle(
                     ctx,
                     DrawMode::stroke(1.0),
@@ -216,7 +241,7 @@ impl BattleshipGame {
     fn draw_ship_placement_screen(
         &self,
         ctx: &mut Context,
-        selected_ship: &mut Option<ShipType>, // Pass selected ship as a mutable reference
+        selected_ship: &mut Option<ShipType>,
     ) -> GameResult {
         let instruction = graphics::Text::new(("Place your ships", graphics::Font::default(), 32.0));
         graphics::draw(ctx, &instruction, (ggez::mint::Point2 { x: 20.0, y: 20.0 }, Color::WHITE))?;
@@ -225,6 +250,42 @@ impl BattleshipGame {
         let player_board_x = 100.0;
         let player_board_y = 100.0;
         self.draw_board(ctx, &self.player_board, player_board_x, player_board_y, Color::WHITE)?;
+    
+        // Highlight cells where the ship would be placed
+        if let Some(ship) = selected_ship {
+            let col = ((self.mouse_x - player_board_x) / CELL_SIZE).floor() as usize;
+            let row = ((self.mouse_y - player_board_y) / CELL_SIZE).floor() as usize;
+    
+            if self.is_ship_horizontal {
+                if col + ship.size() <= GRID_SIZE && row < GRID_SIZE {
+                    for i in 0..ship.size() {
+                        let x = player_board_x + (col + i) as f32 * CELL_SIZE;
+                        let y = player_board_y + row as f32 * CELL_SIZE;
+                        let highlight = Mesh::new_rectangle(
+                            ctx,
+                            DrawMode::fill(),
+                            Rect::new(x, y, CELL_SIZE, CELL_SIZE),
+                            Color::from_rgba(200, 200, 200, 128), // Light grey with transparency
+                        )?;
+                        graphics::draw(ctx, &highlight, graphics::DrawParam::default())?;
+                    }
+                }
+            } else {
+                if row + ship.size() <= GRID_SIZE && col < GRID_SIZE {
+                    for i in 0..ship.size() {
+                        let x = player_board_x + col as f32 * CELL_SIZE;
+                        let y = player_board_y + (row + i) as f32 * CELL_SIZE;
+                        let highlight = Mesh::new_rectangle(
+                            ctx,
+                            DrawMode::fill(),
+                            Rect::new(x, y, CELL_SIZE, CELL_SIZE),
+                            Color::from_rgba(200, 200, 200, 128), // Light grey with transparency
+                        )?;
+                        graphics::draw(ctx, &highlight, graphics::DrawParam::default())?;
+                    }
+                }
+            }
+        }
     
         // Draw ship buttons and models
         let ships_x = player_board_x + GRID_SIZE as f32 * CELL_SIZE + 50.0;
@@ -259,22 +320,22 @@ impl BattleshipGame {
             graphics::draw(ctx, &ship_model, graphics::DrawParam::default())?;
     
             // Cross out placed ships
-            if !self.ships_to_place.contains(ship) {
-                let cross_line = Mesh::new_line(
-                    ctx,
-                    &[
-                        ggez::mint::Point2 { x: model_x, y: model_y },
-                        ggez::mint::Point2 { x: model_x + model_width, y: model_y + model_height },
-                    ],
-                    2.0,
-                    Color::from_rgb(255, 0, 0),
-                )?;
-                graphics::draw(ctx, &cross_line, graphics::DrawParam::default())?;
-            }
+            // if !self.ships_to_place.contains(ship) {
+            //     let cross_line = Mesh::new_line(
+            //         ctx,
+            //         &[
+            //             ggez::mint::Point2 { x: model_x, y: model_y },
+            //             ggez::mint::Point2 { x: model_x + model_width, y: model_y + model_height },
+            //         ],
+            //         2.0,
+            //         Color::from_rgb(255, 0, 0),
+            //     )?;
+            //     graphics::draw(ctx, &cross_line, graphics::DrawParam::default())?;
+            // }
     
             ships_y += 80.0;
         }
-    
+        
         // Draw "Continue" button
         if self.ships_to_place.is_empty() {
             let button_text = Text::new(
@@ -292,31 +353,12 @@ impl BattleshipGame {
         Ok(())
     }
     
+    /////////////////////////////////////////////////////////////////////
     
-    
-    // fn draw_ships_to_place(&self, ctx: &mut Context, x_offset: f32, y_offset: f32) -> GameResult {
-    //     let mut y_position = y_offset;
-
-    //     for &ship_size in &self.ships_to_place {
-    //         for i in 0..ship_size {
-    //             let x = x_offset + i as f32 * CELL_SIZE;
-    //             let y = y_position;
-
-    //             let rectangle = Mesh::new_rectangle(
-    //                 ctx,
-    //                 DrawMode::fill(),
-    //                 Rect::new(x, y, CELL_SIZE, CELL_SIZE),
-    //                 Color::from_rgb(0, 255, 0), // Green for unplaced ships
-    //             )?;
-    //             graphics::draw(ctx, &rectangle, graphics::DrawParam::default())?;
-    //         }
-
-    //         // Add spacing between ships
-    //         y_position += CELL_SIZE * 1.5;
-    //     }
-
-    //     Ok(())
-    // }
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
+        self.mouse_x = x;
+        self.mouse_y = y;
+    }
 
 }
 
@@ -329,12 +371,7 @@ impl EventHandler for BattleshipGame {
         Ok(())
     }
 
-    // fn draw(&mut self, ctx: &mut Context) -> GameResult {
-    //     match self.game_state {
-    //         GameState::StartScreen => self.draw_start_screen(ctx),
-    //         GameState::Playing => self.draw_game_screen(ctx),
-    //     }
-    // }
+   
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // Clear the screen only once per frame
@@ -359,11 +396,11 @@ impl EventHandler for BattleshipGame {
     }
 
     fn mouse_button_down_event(
-        &mut self, 
-        _ctx: &mut Context, 
-        button: MouseButton, 
-        x: f32, 
-        y: f32
+        &mut self,
+        _ctx: &mut Context,
+        button: MouseButton,
+        x: f32,
+        y: f32,
     ) {
         if self.game_state == GameState::StartScreen && button == MouseButton::Left {
             let (window_width, _window_height) = (1200.0, 800.0);
@@ -396,52 +433,99 @@ impl EventHandler for BattleshipGame {
             }
         }
     
-        if self.game_state == GameState::ShipPlacement && button == MouseButton::Left {
-            let player_board_x = 100.0;
-            let player_board_y = 100.0;
-            let board_width = GRID_SIZE as f32 * CELL_SIZE;
+        if self.game_state == GameState::ShipPlacement {
+            if button == MouseButton::Right {
+                // Toggle ship orientation on right-click
+                if self.selected_ship.is_some() {
+                    self.is_ship_horizontal = !self.is_ship_horizontal;
+                }
+            } else if button == MouseButton::Left {
+                let player_board_x = 100.0;
+                let player_board_y = 100.0;
+                let board_width = GRID_SIZE as f32 * CELL_SIZE;
     
-            let ships_x = player_board_x + board_width + 50.0;
-            let mut ships_y = player_board_y;
+                let ships_x = player_board_x + board_width + 50.0;
+                let mut ships_y = player_board_y;
     
-            // Check if a ship is selected
-            for ship in self.ships_to_place.iter() {
-                let model_x = ships_x;
-                let model_y = ships_y + 30.0;
-                let model_width = CELL_SIZE * ship.size() as f32;
-                let model_height = CELL_SIZE / 2.0;
+                // Check if a ship is selected
+                for ship in self.ships_to_place.iter() {
+                    let model_x = ships_x;
+                    let model_y = ships_y + 30.0;
+                    let model_width = CELL_SIZE * ship.size() as f32;
+                    let model_height = CELL_SIZE / 2.0;
     
-                if x >= model_x && x <= model_x + model_width
-                    && y >= model_y && y <= model_y + model_height
-                {
-                    self.selected_ship = Some(*ship); // Set selected_ship here
-                    return;
+                    if x >= model_x && x <= model_x + model_width
+                        && y >= model_y && y <= model_y + model_height
+                    {
+                        self.selected_ship = Some(*ship); // Set selected_ship here
+                        return;
+                    }
+    
+                    ships_y += 80.0;
                 }
     
-                ships_y += 80.0;
-            }
+                // Place ship on the board
+                if let Some(selected_ship) = &self.selected_ship {
+                    let col = ((x - player_board_x) / CELL_SIZE).floor() as usize;
+                    let row = ((y - player_board_y) / CELL_SIZE).floor() as usize;
     
-            // Place ship on the board
-            if let Some(selected_ship) = &self.selected_ship {
-                let col = ((x - player_board_x) / CELL_SIZE).floor() as usize;
-                let row = ((y - player_board_y) / CELL_SIZE).floor() as usize;
-    
-                if row + selected_ship.size() <= GRID_SIZE && col < GRID_SIZE {
-                    let can_place = (0..selected_ship.size()).all(|i| self.player_board[row + i][col] == CellState::Empty);
+                    // Check if the ship can be placed
+                    let can_place = if self.is_ship_horizontal {
+                        if col + selected_ship.size() > GRID_SIZE {
+                            false
+                        } else {
+                            (0..selected_ship.size()).all(|i| self.player_board[row][col + i] == CellState::Empty)
+                        }
+                    } else {
+                        if row + selected_ship.size() > GRID_SIZE {
+                            false
+                        } else {
+                            (0..selected_ship.size()).all(|i| self.player_board[row + i][col] == CellState::Empty)
+                        }
+                    };
     
                     if can_place {
-                        for i in 0..selected_ship.size() {
-                            self.player_board[row + i][col] = CellState::Hit;
+                        if self.is_ship_horizontal {
+                            for i in 0..selected_ship.size() {
+                                self.player_board[row][col + i] = CellState::Occupied; // Mark as occupied
+                            }
+                        } else {
+                            for i in 0..selected_ship.size() {
+                                self.player_board[row + i][col] = CellState::Occupied; // Mark as occupied
+                            }
                         }
+    
+                        // Remove the ship from the list of ships to place
                         self.ships_to_place.retain(|&s| s != *selected_ship);
+    
+                        // Reset the selected ship after placement
+                        self.selected_ship = None;
                     }
                 }
     
-                // Reset the selected ship after placement
-                self.selected_ship = None;
+                // Check if the "Continue" button is clicked
+                if self.ships_to_place.is_empty() {
+                    let button_x = 500.0;
+                    let button_y = 700.0;
+                    let button_width = 200.0;
+                    let button_height = 50.0;
+    
+                    if x >= button_x && x <= button_x + button_width
+                        && y >= button_y && y <= button_y + button_height
+                    {
+                        self.game_state = GameState::Playing;
+                    }
+                }
             }
         }
     }
+
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
+        self.mouse_x = x;
+        self.mouse_y = y;
+        println!("{x} {y}\n");
+    }
+
     
 }
 
